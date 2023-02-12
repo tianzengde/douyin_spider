@@ -124,6 +124,22 @@ class VideoPydtc(BaseModel):
     spider_time: datetime.datetime
 
 
+class UserPydtc(BaseModel):
+    uid: str | int
+    unique_id: str | int
+    nickname: str
+    signature: str
+    user_age: str | int
+    sec_uid: str
+    ip_location: str
+    follower_count: str | int
+    following_count: str | int
+    total_favorited: str | int
+    share_url: str
+    share_qrcode_url: list
+    avatar: dict
+
+
 def video_filtering(videos: list) -> List[VideoPydtc]:
     filted_videos = []
     for v in videos:
@@ -145,15 +161,37 @@ def video_filtering(videos: list) -> List[VideoPydtc]:
     return filted_videos
 
 
+def user_filtering(user_info: dict) -> UserPydtc:
+    fields = UserPydtc.__fields__.keys()
+    user_info = user_info.get("user")
+    info = {k: user_info.get(k, None) for k in fields}
+    share = user_info.get("share_info")
+    info["share_url"] = share.get("share_url")
+    info["share_qrcode_url"] = share.get("share_qrcode_url").get("url_list")
+    avatar = {
+        "avatar_168x168": user_info.get("avatar_168x168").get("url_list")[0],
+        "avatar_300x300": user_info.get("avatar_300x300").get("url_list")[0],
+        "avatar_1080x1080": user_info.get("avatar_larger").get("url_list")[0],
+        "avatar_720x720": user_info.get("avatar_medium").get("url_list")[0],
+        "avatar_100x100": user_info.get("avatar_thumb").get("url_list")[0],
+    }
+    info["avatar"] = avatar
+    return UserPydtc(**info)
+
+
 if __name__ == "__main__":
 
     url = "https://www.douyin.com/user/MS4wLjABAAAAB8Wx_ofNp4FZgxp6hb5IRLDu4t8mfT9eBlZShcMt1MoAY1w7IoZctmFeYgxf7I9C?vid=7096823142139677966"
     # "https://www.douyin.com/aweme/v1/web/comment/list/" # 评论
-    # "https://www.douyin.com/aweme/v1/web/aweme/post/"   # 视频列表
 
     dy = SpiderDY()
+
     # user_url = dy.search_user("24481641751")
-    # user_info = dy.user_info(url=user_url,download=True)
-    videos_info = dy.videos_info(url=url)
+
+    user_info = dy.user_info(url=url)
+    user_pydtc = user_filtering(user_info)
+
+    # videos_info = dy.videos_info(url=url)
+    # videos_pydtc = video_filtering(videos_info)
+
     dy.close()
-    video_filtering(videos_info)
