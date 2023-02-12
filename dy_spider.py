@@ -138,6 +138,7 @@ class UserPydtc(BaseModel):
     share_url: str
     share_qrcode_url: list
     avatar: dict
+    spider_time: datetime.datetime
 
 
 def video_filtering(videos: list) -> List[VideoPydtc]:
@@ -176,6 +177,7 @@ def user_filtering(user_info: dict) -> UserPydtc:
         "avatar_100x100": user_info.get("avatar_thumb").get("url_list")[0],
     }
     info["avatar"] = avatar
+    info["spider_time"] = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
     return UserPydtc(**info)
 
 
