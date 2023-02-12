@@ -119,7 +119,7 @@ class VideoPydtc(BaseModel):
     preview_title: str
     share_url: str
     statistics: dict
-    download_addr: list
+    download_addr: list | None
     origin_cover: list | None
     spider_time: datetime.datetime
 
@@ -143,20 +143,16 @@ class UserPydtc(BaseModel):
 
 def video_filtering(videos: list) -> List[VideoPydtc]:
     filted_videos = []
+    fields = VideoPydtc.__fields__.keys()
     for v in videos:
-        info = {
-            "aweme_id": v.get("aweme_id"),
-            "video_id": v.get("aweme_id"),
-            "author_user_id": v.get("author_user_id"),
-            "create_time": datetime.datetime.fromtimestamp(v.get("create_time")) + datetime.timedelta(hours=8),
-            "desc": v.get("desc"),
-            "preview_title": v.get("preview_title"),
-            "share_url": v.get("share_url"),
-            "statistics": v.get("statistics"),
-            "download_addr": v.get("video").get("download_addr").get("url_list"),
-            "origin_cover": v.get("video").get("origin_cover").get("url_list"),
-            "spider_time": datetime.datetime.utcnow() + datetime.timedelta(hours=8)
-        }
+        info = {k:v.get(k,None) for k in fields}
+        info["video_id"] = v.get("aweme_id")
+        info["create_time"] = datetime.datetime.fromtimestamp(v.get("create_time")) + datetime.timedelta(hours=8)
+        info["spider_time"] = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+        if (download_addr:=v.get("video").get("download_addr")) and (download_addr:=download_addr.get("url_list")):
+            info["download_addr"] = download_addr
+        if (origin_cover:=v.get("video").get("origin_cover")) and (origin_cover:=origin_cover.get("url_list")):
+            info["origin_cover"] = download_addr
         video_dtc = VideoPydtc(**info)
         filted_videos.append(video_dtc)
     return filted_videos
@@ -183,17 +179,17 @@ def user_filtering(user_info: dict) -> UserPydtc:
 
 if __name__ == "__main__":
 
-    url = "https://www.douyin.com/user/MS4wLjABAAAAB8Wx_ofNp4FZgxp6hb5IRLDu4t8mfT9eBlZShcMt1MoAY1w7IoZctmFeYgxf7I9C?vid=7096823142139677966"
+    url = "https://www.douyin.com/user/MS4wLjABAAAA1_iC_Juo6ByvfBeN75UXmhP9zjqi7wsIchjuzv7tOsc"
     # "https://www.douyin.com/aweme/v1/web/comment/list/" # 评论
 
     dy = SpiderDY()
 
     # user_url = dy.search_user("24481641751")
 
-    user_info = dy.user_info(url=url)
-    user_pydtc = user_filtering(user_info)
+    # user_info = dy.user_info(url=url)
+    # user_pydtc = user_filtering(user_info)
 
-    # videos_info = dy.videos_info(url=url)
-    # videos_pydtc = video_filtering(videos_info)
-
+    videos_info = dy.videos_info(url=url)
+    videos_pydtc = video_filtering(videos_info)
+    print(videos_pydtc)
     dy.close()
